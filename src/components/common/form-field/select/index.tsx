@@ -9,6 +9,11 @@ import {
   type Path,
 } from 'react-hook-form';
 
+import {
+  FormFieldWrapper,
+  getFieldStatus,
+} from '@/components/common/form-field/form-field-wrapper';
+
 type Props<T extends FieldValues> = {
   control: Control<T>;
   name: Path<T>;
@@ -16,6 +21,7 @@ type Props<T extends FieldValues> = {
   required?: boolean;
   description?: ReactNode;
   errors?: FieldError;
+  wrapperClassName?: string;
 } & SelectProps;
 
 const FormFieldSelect = <T extends FieldValues>({
@@ -25,39 +31,41 @@ const FormFieldSelect = <T extends FieldValues>({
   required,
   description,
   errors,
+  wrapperClassName,
+  onChange: externalOnChange,
   ...selectProps
 }: Props<T>) => {
   return (
     <Controller
       control={control}
       name={name}
-      render={({ field }) => (
-        <div className='flex flex-col gap-1'>
-          {label && (
-            <label htmlFor={name} className='text-sm font-medium text-gray-700'>
-              {label}
-              {required && <span className='ml-1 text-red-500'>*</span>}
-            </label>
-          )}
-          <Select
-            {...selectProps}
-            {...field}
-            id={name}
-            status={errors ? 'error' : undefined}
-            onChange={(value, option) => {
-              field.onChange(value);
-              selectProps.onChange?.(value, option);
-            }}
-            onBlur={field.onBlur}
-            value={field.value}
-          />
-          {errors ? (
-            <span className='text-xs text-red-500'>{errors.message}</span>
-          ) : (
-            description && <span className='text-xs text-gray-500'>{description}</span>
-          )}
-        </div>
-      )}
+      render={({ field }) => {
+        const handleChange = (value: unknown, option: unknown) => {
+          field.onChange(value);
+          externalOnChange?.(value, option as Parameters<NonNullable<SelectProps['onChange']>>[1]);
+        };
+
+        return (
+          <FormFieldWrapper
+            name={name}
+            label={label}
+            required={required}
+            description={description}
+            errors={errors}
+            className={wrapperClassName}
+          >
+            <Select
+              {...selectProps}
+              {...field}
+              id={name}
+              status={getFieldStatus(errors)}
+              onChange={handleChange}
+              onBlur={field.onBlur}
+              value={field.value}
+            />
+          </FormFieldWrapper>
+        );
+      }}
     />
   );
 };

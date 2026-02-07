@@ -4,10 +4,8 @@ import { type Key, useMemo, useState } from 'react';
 
 import { Table } from 'antd';
 
-import { IconTableEmpty } from '@/static/icon';
-
-import { EMPTY_TEXT_CONFIG } from './constants';
 import { mergeRowSelection, buildPaginationConfig, enhanceColumnsWithActionHover } from './helpers';
+import TableEmptyState from './table-empty-state';
 import type { CommonTableProps } from './types';
 import { buildColumnsWithDefaultSorters, getRowKey } from './utils';
 
@@ -22,6 +20,8 @@ const CommonTable = <RecordType extends object = Record<string, unknown>>({
   current,
   rowsPerPage,
   showSizeChanger,
+  emptyMessage,
+  emptyMinHeight,
   ...restTableProps
 }: CommonTableProps<RecordType>) => {
   const [hoveredRowKey, setHoveredRowKey] = useState<Key | null>(null);
@@ -37,10 +37,10 @@ const CommonTable = <RecordType extends object = Record<string, unknown>>({
 
   const mergedRowSelection = useMemo(
     () => mergeRowSelection<RecordType>(showCheckbox, rowSelection),
-    [rowSelection, showCheckbox]
+    [rowSelection, showCheckbox],
   );
 
-  const paginationWithTotalLabel = useMemo(
+  const paginationConfig = useMemo(
     () =>
       buildPaginationConfig<RecordType>({
         pagination,
@@ -50,17 +50,20 @@ const CommonTable = <RecordType extends object = Record<string, unknown>>({
         rowsPerPage,
         showSizeChanger,
       }),
-    [pagination, total, defaultPageSize, current, rowsPerPage, showSizeChanger]
+    [pagination, total, defaultPageSize, current, rowsPerPage, showSizeChanger],
   );
 
-  const handleRowMouseEnter = (record: RecordType, index?: number) => {
-    const key = getRowKey(record, rowKey, index);
-    setHoveredRowKey(key);
-  };
+  const tableLocale = useMemo(
+    () => ({
+      emptyText: <TableEmptyState message={emptyMessage} minHeight={emptyMinHeight} />,
+    }),
+    [emptyMessage, emptyMinHeight],
+  );
 
-  const handleRowMouseLeave = () => {
-    setHoveredRowKey(null);
-  };
+  const getRowHandlers = (record: RecordType, index?: number) => ({
+    onMouseEnter: () => setHoveredRowKey(getRowKey(record, rowKey, index)),
+    onMouseLeave: () => setHoveredRowKey(null),
+  });
 
   return (
     <div className='table-container'>
@@ -68,19 +71,9 @@ const CommonTable = <RecordType extends object = Record<string, unknown>>({
         columns={enhancedColumns}
         rowSelection={mergedRowSelection}
         rowKey={rowKey}
-        pagination={paginationWithTotalLabel}
-        locale={{
-          emptyText: (
-            <div className='flex flex-col justify-center items-center min-h-[550px]'>
-              <IconTableEmpty />
-              <span>{EMPTY_TEXT_CONFIG.message}</span>
-            </div>
-          ),
-        }}
-        onRow={(record, index) => ({
-          onMouseEnter: () => handleRowMouseEnter(record, index),
-          onMouseLeave: handleRowMouseLeave,
-        })}
+        pagination={paginationConfig}
+        locale={tableLocale}
+        onRow={getRowHandlers}
         {...restTableProps}
       />
     </div>

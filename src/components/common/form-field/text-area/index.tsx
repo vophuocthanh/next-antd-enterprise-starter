@@ -9,6 +9,11 @@ import {
   type Path,
 } from 'react-hook-form';
 
+import {
+  FormFieldWrapper,
+  getFieldStatus,
+} from '@/components/common/form-field/form-field-wrapper';
+
 const { TextArea } = Input;
 
 type AntdTextAreaProps = React.ComponentProps<typeof TextArea>;
@@ -20,6 +25,7 @@ type Props<T extends FieldValues> = {
   required?: boolean;
   description?: ReactNode;
   errors?: FieldError;
+  wrapperClassName?: string;
 } & AntdTextAreaProps;
 
 const FormFieldTextArea = <T extends FieldValues>({
@@ -29,6 +35,7 @@ const FormFieldTextArea = <T extends FieldValues>({
   required,
   description,
   errors,
+  wrapperClassName,
   ...textAreaProps
 }: Props<T>) => {
   return (
@@ -36,20 +43,16 @@ const FormFieldTextArea = <T extends FieldValues>({
       control={control}
       name={name}
       render={({ field }) => (
-        <div className='flex flex-col gap-1'>
-          {label && (
-            <label htmlFor={name} className='text-sm font-medium text-gray-700'>
-              {label}
-              {required && <span className='ml-1 text-red-500'>*</span>}
-            </label>
-          )}
-          <TextArea {...field} {...textAreaProps} id={name} status={errors ? 'error' : undefined} />
-          {errors ? (
-            <span className='text-xs text-red-500'>{errors.message}</span>
-          ) : (
-            description && <span className='text-xs text-gray-500'>{description}</span>
-          )}
-        </div>
+        <FormFieldWrapper
+          name={name}
+          label={label}
+          required={required}
+          description={description}
+          errors={errors}
+          className={wrapperClassName}
+        >
+          <TextArea {...field} {...textAreaProps} id={name} status={getFieldStatus(errors)} />
+        </FormFieldWrapper>
       )}
     />
   );
